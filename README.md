@@ -13,4 +13,4 @@ The following output images were obtained after 3 epochs of training!
 
 <p align="center"><img src="https://github.com/shlok191/PyTorch_Terrain_Segmentation/blob/main/data/results.png" width="50%"></p>
 
-The observed model had an accuracy of 92.2%. Due to a lack of newer GPUs in my tech stack, I did not pursue to train the model beyond 3 epochs. However, I am quite confident that increasing the epochs to ~ 40 would show a drastic improvevemnt upwards to ~ 98% of accuracy!
+The observed model had an accuracy of 92.2%. Due to a lack of newer GPUs in my tech stack, I did not pursue to train the model beyond 3 epochs. However, I am quite confident that increasing the epochs to ~ 40 would show a drastic improvevemnt upwards to ~ 98% of accuracy as seen in the work done for the lunar rover project!
