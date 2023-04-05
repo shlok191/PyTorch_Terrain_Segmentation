@@ -9,8 +9,8 @@ This project builds a custom UNet architecture from scratch using PyTorch and Op
 
 The UNet deep learning structure first downscales all input features into smaller sizes before upscaling all features and converting given input channels to the required output channels (each channel representing one class label's pixels!) in order to accurately classify each pixel as a class unique class object. The process is accomplished by 2 implemented `nn.moduleLists` representing the curves of the "U" structure. Each moduleList consists of 2 custom implemented `DoubleConv` convolution class objects and 1 pooling operation each stage to get desired numbers of channels at each stage.
 
-The following output images were obtained after 3 epochs of training!
+The following output images were obtained after 15 epochs of training!
 
 <p align="center"><img src="https://github.com/shlok191/PyTorch_Terrain_Segmentation/blob/main/data/results.png" width="50%"></p>
 
-The observed model had an accuracy of 92.2%. Due to a lack of newer GPUs in my tech stack, I did not pursue to train the model beyond 3 epochs. However, I am quite confident that increasing the epochs to ~ 40 would show a drastic improvevemnt upwards to ~ 98% of accuracy as seen in the work done for the lunar rover project!
+The observed model had an accuracy of 82.2%. Due to a lack of newer GPUs in my tech stack, I did not pursue to train the model beyond 10-15 epochs. However, I am quite confident that increasing the epochs to ~ 40 would show a drastic improvevemnt giving us close to ~ 90% of accuracy as seen in the work done for the lunar rover project! Additionally, I will be looking into developing RNNs from scratch as well as a learning exercise and to further develop my expertise in the exciting world of computer vision!
