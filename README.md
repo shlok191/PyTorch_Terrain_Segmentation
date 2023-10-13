@@ -1,4 +1,4 @@
-# PyTorch Based Satellite Imaging Instance Segmentation Project
+# Enhanced UNet DNN Satellite Imaging Instance Segmentation Project
 
 This project attempts to develop a Convolutional Neural Network with PyTorch with inspiration taken from the popular UNet encoder-decoder network architecture designed to assist with instance segmentation originally designed to improve medical imaging techniques for the detection of cancerous tumors!
 
