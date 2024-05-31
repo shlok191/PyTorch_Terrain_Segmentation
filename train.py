@@ -1,93 +1,70 @@
+import os
+
 import torch
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from model import UNET
-from gen_dataset import DLoader
-from utils import (
-    load_checkpoint,
-    save_checkpoint,
-    get_loaders,
-    check_accuracy,
-    save_predictions_as_imgs,
-)
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
+from tqdm import tqdm  # Install tqdm first: pip install tqdm
 
-# Hyperparameters etc.
-LEARNING_RATE = 1e-4
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 16
-NUM_EPOCHS = 25
-NUM_WORKERS = 2
-IMAGE_HEIGHT = 2048  # 5012 originally
-IMAGE_WIDTH = 2048  # 5012 originally
-PIN_MEMORY = True
-LOAD_MODEL = False
+from dataset import LandCoverDataset
+from model import UNet
 
-TRAIN_IMG_DIR = "data/train_images/"
-TRAIN_MASK_DIR = "data/train_masks/"
-VAL_IMG_DIR = "data/val_images/"
-VAL_MASK_DIR = "data/val_masks/"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Defining hyperparameters
+batch_size = 8
+num_epochs = 10
+learning_rate = 1e-2
+img_dims = (512, 512)
+pin_memory = True
+checkpoint_dir = "checkpoints"  # Directory to save checkpoints
+
+# Define scaler for mixed precision training
+scaler = GradScaler()
 
 
-def train_fn(loader, model, optimizer, loss_fn, scaler):
-    loop = tqdm(loader)
-
-    for batch_idx, (data, targets) in enumerate(loop):
-        data = data.to(device=DEVICE)
-        targets = targets.float().unsqueeze(1).to(device=DEVICE)
-
-        # forward
-        with torch.cuda.amp.autocast():
-            predictions = model(data)
-            loss = loss_fn(predictions, targets)
-
-        # backward
+def train(loader, model, optimizer, loss_fn, epoch):
+    model.train()
+    running_loss = 0.0
+    loop = tqdm(loader, leave=True)
+    for batch_idx, (images, masks) in enumerate(loop):
+        images = images.to(device=device)
+        masks = masks.to(device=device)
         optimizer.zero_grad()
+        # Use autocast to perform operations in half precision
+        with autocast():
+            predictions = model(images)
+            loss = loss_fn(predictions, masks)
+        # Scale the loss to prevent underflow or overflow
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
+        running_loss += loss.item()
+        # Update progress bar with loss
+        loop.set_postfix(loss=running_loss / (batch_idx + 1))
 
-        # update tqdm loop
-        loop.set_postfix(loss=loss.item())
+    # Save checkpoint
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    checkpoint_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch}.pth")
+    torch.save(model.state_dict(), checkpoint_path)
 
 
 def main():
+    # Load dataset
+    dataset = LandCoverDataset()
+    loader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory
+    )
+    # Define model, optimizer, and loss function
+    model = UNet(in_channels=3, out_channels=64, class_count=3, layers=4).to(
+        device
+    )
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    loss_fn = nn.CrossEntropyLoss()
 
-    model = UNET(in_channels=3, out_channels=4).to(DEVICE)
-    loss_fn = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-
-    generic_loader = DLoader()
-    generic_loader.splitImages()
-
-    train_loader, test_loader, val_loader = generic_loader.returnDataLoader()
-
-    if LOAD_MODEL:
-        load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
-
-    check_accuracy(val_loader, model, device=DEVICE)
-    scaler = torch.cuda.amp.GradScaler()
-
-    for epoch in range(NUM_EPOCHS):
-        train_fn(train_loader, model, optimizer, loss_fn, scaler)
-
-        # save model
-        checkpoint = {
-            "state_dict": model.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        }
-
-        save_checkpoint(checkpoint)
-
-        # check accuracy
-        check_accuracy(val_loader, model, device=DEVICE)
-
-        # print some examples to a folder
-        save_predictions_as_imgs(
-            val_loader, model, folder="saved_images/", device=DEVICE
-        )
+    for epoch in range(num_epochs):
+        train(loader, model, optimizer, loss_fn, epoch)
 
 
 if __name__ == "__main__":
