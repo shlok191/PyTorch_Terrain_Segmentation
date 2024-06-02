@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
-from tqdm import tqdm  # Install tqdm first: pip install tqdm
+from tqdm import tqdm
 
 from dataset import LandCoverDataset
 from model import UNet
@@ -20,9 +20,7 @@ img_dims = (512, 512)
 pin_memory = True
 checkpoint_dir = "checkpoints"  # Directory to save checkpoints
 
-# Define scaler for mixed precision training
 scaler = GradScaler()
-
 
 def train(loader, model, optimizer, loss_fn, epoch):
     model.train()
